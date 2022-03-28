@@ -1,5 +1,5 @@
 # BioBART
-BioBART: Pretraining and Evaluation of A Biomedical Generative Language Model
+BioBART: Pretraining and Evaluation of A Biomedical Generative Language Model [ACL-BioNLP 2022]
 
 # Model Checkpoints
 
