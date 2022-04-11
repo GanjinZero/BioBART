@@ -1,5 +1,5 @@
 # BioBART
-BioBART: Pretraining and Evaluation of A Biomedical Generative Language Model [ACL-BioNLP 2022]
+BioBART: Pretraining and Evaluation of A Biomedical Generative Language Model [ACL-BioNLP 2022] [Paper](https://arxiv.org/abs/2204.03905)
 
 Tsinghua University \& International Digital Economy Academy.
 
