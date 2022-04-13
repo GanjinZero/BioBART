@@ -11,6 +11,7 @@ Tsinghua University \& International Digital Economy Academy.
 Two line usages:
 ```python
 model = AutoModel.from_pretrained('GanjinZero/biobart-base')
+# model = AutoModel.from_pretrained('GanjinZero/biobart-large')
 tok = AutoTokenizer.from_pretrained('GanjinZero/biobart-base')
 ```
 
