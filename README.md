@@ -6,9 +6,9 @@ Tsinghua University \& International Digital Economy Academy.
 # Model Checkpoints
 
 - Base Version (6 + 6 Layers): **GanjinZero/biobart-base** or **IDEA-CCNL/Yuyuan-Bart-139M** (same model)
-- Large Version (12 + 12 Layers): **GanjinZero/biobart-large**
+- Large Version (12 + 12 Layers): **GanjinZero/biobart-large** or **IDEA-CCNL/Yuyuan-Bart-400M** (same model)
 
-P.S. Yuyuan is a character in novel Fengshenbang. [Chinese Introduction](https://baike.baidu.com/item/%E9%A4%98%E5%85%83/968026) [English Introduction](https://en.wikisource.org/wiki/Portal:Investiture_of_the_Gods/Chapter_75)
+P.S. Yuyuan is a character in novel Fengshenbang. [Chinese Introduction](https://baike.baidu.com/item/%E9%A4%98%E5%85%83/968026) \ [English Introduction](https://en.wikisource.org/wiki/Portal:Investiture_of_the_Gods/Chapter_75)
 
 Two line usages:
 ```python
