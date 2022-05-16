@@ -19,13 +19,21 @@ tok = AutoTokenizer.from_pretrained('GanjinZero/biobart-base')
 
 # Citation
 ```bibtex
-@misc{https://doi.org/10.48550/arxiv.2204.03905,
-  doi = {10.48550/ARXIV.2204.03905},
-  url = {https://arxiv.org/abs/2204.03905},
-  author = {Yuan, Hongyi and Yuan, Zheng and Gan, Ruyi and Zhang, Jiaxing and Xie, Yutao and Yu, Sheng},
-  keywords = {Computation and Language (cs.CL), FOS: Computer and information sciences, FOS: Computer and information sciences},
-  title = {BioBART: Pretraining and Evaluation of A Biomedical Generative Language Model},
-  publisher = {arXiv},
-  year = {2022}
+@inproceedings{yuan-etal-2022-biobart,
+    title = "{B}io{BART}: Pretraining and Evaluation of A Biomedical Generative Language Model",
+    author = "Yuan, Hongyi  and
+      Yuan, Zheng  and
+      Gan, Ruyi  and
+      Zhang, Jiaxing  and
+      Xie, Yutao  and
+      Yu, Sheng",
+    booktitle = "Proceedings of the 21st Workshop on Biomedical Language Processing",
+    month = may,
+    year = "2022",
+    address = "Dublin, Ireland",
+    publisher = "Association for Computational Linguistics",
+    url = "https://aclanthology.org/2022.bionlp-1.9",
+    pages = "97--109",
+    abstract = "Pretrained language models have served as important backbones for natural language processing. Recently, in-domain pretraining has been shown to benefit various domain-specific downstream tasks. In the biomedical domain, natural language generation (NLG) tasks are of critical importance, while understudied. Approaching natural language understanding (NLU) tasks as NLG achieves satisfying performance in the general domain through constrained language generation or language prompting. We emphasize the lack of in-domain generative language models and the unsystematic generative downstream benchmarks in the biomedical domain, hindering the development of the research community. In this work, we introduce the generative language model BioBART that adapts BART to the biomedical domain. We collate various biomedical language generation tasks including dialogue, summarization, entity linking, and named entity recognition. BioBART pretrained on PubMed abstracts has enhanced performance compared to BART and set strong baselines on several tasks. Furthermore, we conduct ablation studies on the pretraining tasks for BioBART and find that sentence permutation has negative effects on downstream tasks.",
 }
 ```
