@@ -1,0 +1,18 @@
+export CUDA_VISIBLE_DEVICES=$1
+python summarization.py \
+    --model_name_or_path $2 \
+    --train_file ./dataprepare/data/icliniq/train.json \
+    --validation_file ./dataprepare/data/icliniq/dev.json \
+    --test_file ./dataprepare/data/icliniq/test.json \
+    --text_column src \
+    --summary_column tgt \
+    --source_prefix " " \
+    --num_beams 5 \
+    --val_max_target_length 30 \
+    --val_min_target_length 5 \
+    --per_device_train_batch_size 4 \
+    --per_device_eval_batch_size 4 \
+    --num_train_epochs 6 \
+    --learning_rate 1e-5 \
+    --output_dir /platform_tech/yuanzheng/biobart_downstream/icliniq/$3 \
+    --seed 37249 \
