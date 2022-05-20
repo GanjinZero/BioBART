@@ -1,0 +1,49 @@
+{
+    "name": "biobart_pretrain_on_pubmed",
+    "bart_token_file": "./bart-large",
+    "bart_model_file": "./bart-large",
+    "data": {
+        "flags": {
+            "pretrain_dataset": true,
+            "pretrain_type": "PubMed abstract pretrain"
+        },
+        "mixed_seq_datasets": {
+            "512": {
+                "pubmed_pretrain_dataset": "bart_base_512_cased"
+            },
+            "1024": {
+                "pubmed_pretrain_dataset": "tokenized_pubmed_data_1024_large"
+            }
+        }
+    },
+    "mixed_seq_training": {
+        "512": {
+            "num_epochs": 2000000,
+            "warmup_proportion": 0.02,
+            "total_training_steps": 40000,
+            "learning_rate": 1e-4,
+            "num_workers": 8,
+            "async_worker": true,
+            "decay_rate": 0.90, 
+            "decay_step": 150
+        },
+        "1024": {
+            "num_epochs": 20000,
+            "warmup_proportion": 0.02,
+            "total_training_steps": 120000, 
+            "learning_rate": 3e-5,
+            "num_workers": 0,
+            "async_worker": true,
+            "decay_rate": 0.90,
+            "decay_step": 150
+        }
+    },
+    "validation": {
+        "path": "validation_set/"
+    },
+    "comment": {
+        "mixed_seq_training_comment1": ".",
+        "mixed_seq_training_comment2": "."
+
+    }
+}
