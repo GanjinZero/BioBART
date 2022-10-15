@@ -8,18 +8,12 @@ import json
 import torch
 import torch.distributed as dist
 from torch.utils.data import DataLoader, Dataset
-# from torch.utils.data.sampler import RandomSampler, SequentialSampler
-# from torch.utils.data.distributed import DistributedSampler
 from tqdm import tqdm
 
 from optimization_utils import warmup_linear, warmup_linear_decay_exp, warmup_exp_decay_exp, warmup_exp_decay_poly, warmup_linear_decay_linear
 from utils import get_argument_parser, is_time_to_exit, Logger, get_sample_writer, report_step_metrics, report_lamb_coefficients, save_checkpoint_model
 
-# from bing_bert_dataset_provider import BingBertDatasetProvider
-# from nvidia_bert_dataset_provider import NvidiaBertDatasetProvider
-
 from transformers import BartTokenizer
-# from tokenizers import Tokenizer
 from datagen import BioBARTPretrainDataCreator, TokenInstance
 from dataloader import BioBARTDatasetProvider
 from model import BioBARTPTModel
@@ -51,6 +45,80 @@ def checkpoint_model(PATH, ckpt_id, model, epoch, last_global_step,
     else:
         logging.warning(f"Failure {status_msg}")
     return
+
+
+def load_training_checkpoint(args, model, PATH, ckpt_id):
+    """Utility function for checkpointing model + optimizer dictionaries
+       The main purpose for this is to be able to resume training from that instant again
+    """
+    logger = args.logger
+    _, checkpoint_state_dict = model.network.load_checkpoint(PATH, ckpt_id)
+    epoch = checkpoint_state_dict['epoch']
+    last_global_step = checkpoint_state_dict['last_global_step']
+    last_global_data_samples = checkpoint_state_dict[
+        'last_global_data_samples']
+    del checkpoint_state_dict
+    return (epoch, last_global_step, last_global_data_samples)
+
+def load_checkpoint(args, model):
+    global global_step
+    global global_data_samples
+    global last_global_step_from_restore
+
+    config = args.config
+    logger = args.logger
+
+    logger.info(
+        f"Restoring previous training checkpoint from PATH={args.load_training_checkpoint}, CKPT_ID={args.load_checkpoint_id}"
+    )
+    start_epoch, global_step, global_data_samples = load_training_checkpoint(
+        args=args,
+        model=model,
+        PATH=args.load_training_checkpoint,
+        ckpt_id=args.load_checkpoint_id)
+    logger.info(
+        f"The model is loaded from last checkpoint at epoch {start_epoch} when the global steps were at {global_step} and global data samples at {global_data_samples}"
+    )
+
+    if args.rewarmup:
+        logger.info(
+            f"Rewarmup learning rate with last_global_step_from_restore = {global_step}"
+        )
+        last_global_step_from_restore = global_step
+
+    if args.lr_schedule == "EE":
+        # print(f'LR Schedule is {args.lr_schedule} EE')
+        lr_this_step = config["training"][
+            "learning_rate"] * warmup_exp_decay_exp(
+                global_step, config["training"]["decay_rate"],
+                config["training"]["decay_step"],
+                config["training"]["total_training_steps"],
+                config["training"]["warmup_proportion"])
+    elif args.lr_schedule == "EP":
+        # print(f'LR Schedule is {args.lr_schedule} EP')
+        lr_this_step = config["training"][
+            "learning_rate"] * warmup_exp_decay_poly(
+                global_step, config["training"]["total_training_steps"],
+                config["training"]["warmup_proportion"])
+    elif args.lr_schedule == "LE":
+        # print(f'LR Schedule is {args.lr_schedule} LE')
+        lr_this_step = config["training"][
+            "learning_rate"] * warmup_linear_decay_exp(
+                global_step, config["training"]["decay_rate"],
+                config["training"]["decay_step"],
+                config["training"]["total_training_steps"],
+                config["training"]["warmup_proportion"])
+    elif args.lr_schedule == "LL":
+        # print(f'LR Schedule is {args.lr_schedule} LL')
+        lr_this_step = config["training"][
+            "learning_rate"] * warmup_linear_decay_linear(
+                global_step,
+                config["training"]["total_training_steps"],
+                config["training"]["warmup_proportion"])
+
+    logger.info(f"Restart training with lr = {lr_this_step}")
+
+    return start_epoch
 
 def get_arguments():
     parser = get_argument_parser()
@@ -282,13 +350,6 @@ def train(args,
         labels = batch[1]
         attention_mask = batch[2]
         decoder_attention_mask = batch[3]
-        # print(input_ids.shape)
-        # print(labels.shape)
-        # print(attention_mask.shape)
-        # print(decoder_attention_mask.shape)
-        # print(input_ids[0])
-        # print(labels[0])
-        # input()
         output = model.network(input_ids = input_ids,
                                 attention_mask = attention_mask,
                                 labels = labels,
@@ -331,14 +392,22 @@ def train(args,
 
         current_global_step = global_step - last_global_step_from_restore
 
-        # if current_global_step % args.save_steps == 0:
-        #     save_checkpoint_model(PATH=args.saved_model_path,
-        #                           ckpt_id='checkpoint_global_step_{}'.format(global_step),
-        #                           model=model,
-        #                           last_global_step=global_step,
-        #                           last_global_data_samples=global_data_samples,
-        #                           args = args,
-        #                           )
+        if current_global_step % args.save_steps == 0 and current_global_step >= 30000:
+            checkpoint_model(
+                    PATH=args.saved_model_path,
+                    ckpt_id='checkpoint_global_step_{}'.format(global_step),
+                    model=model,
+                    epoch=index + 1,
+                    last_global_step=global_step,
+                    last_global_data_samples=global_data_samples
+                )
+            # save_checkpoint_model(PATH=args.saved_model_path,
+            #                       ckpt_id='checkpoint_global_step_{}'.format(global_step),
+            #                       model=model,
+            #                       last_global_step=global_step,
+            #                       last_global_data_samples=global_data_samples,
+            #                       args = args,
+            #                       )
 
         if is_time_to_exit(args=args,
                            epoch_steps=epoch_step,
@@ -380,14 +449,23 @@ def run(args, model, optimizer, start_epoch):
         train(args, index, model, optimizer, pretrain_dataset_provider)
 
 
-        if index % 100 == 0:
-            save_checkpoint_model(PATH=args.saved_model_path,
-                                    ckpt_id='checkpoint_global_step_{},epoch_index_{}'.format(global_step, index+1),
-                                    model=model,
-                                    last_global_step=global_step,
-                                    last_global_data_samples=global_data_samples,
-                                    args = args,
-                                    )
+        if index % 100 == 0 and index >= 1:
+            checkpoint_model(
+                    PATH=args.saved_model_path,
+                    ckpt_id='model_and_optimizer_ckpt_epoch{}_step{}'.format(
+                        index + 1, global_step),
+                    model=model,
+                    epoch=index + 1,
+                    last_global_step=global_step,
+                    last_global_data_samples=global_data_samples
+                )
+            # save_checkpoint_model(PATH=args.saved_model_path,
+            #                         ckpt_id='checkpoint_global_step_{},epoch_index_{}'.format(global_step, index+1),
+            #                         model=model,
+            #                         last_global_step=global_step,
+            #                         last_global_data_samples=global_data_samples,
+            #                         args = args,
+            #                         )
 
         post = time.time()
         logger.info(f"Time for shard {index + 1}: {post-pre} seconds")
@@ -397,13 +475,22 @@ def run(args, model, optimizer, start_epoch):
             print(
                 f'Warning: Early training termination due to max steps limit, epoch={index+1}, global_step={current_global_step}'
             )
-            save_checkpoint_model(PATH=args.saved_model_path,
-                                    ckpt_id='checkpoint_global_step_{},epoch_index_{}'.format(global_step, index+1),
-                                    model=model,
-                                    last_global_step=global_step,
-                                    last_global_data_samples=global_data_samples,
-                                    args = args,
-                                    )
+            # save_checkpoint_model(PATH=args.saved_model_path,
+            #                         ckpt_id='checkpoint_global_step_{},epoch_index_{}'.format(global_step, index+1),
+            #                         model=model,
+            #                         last_global_step=global_step,
+            #                         last_global_data_samples=global_data_samples,
+            #                         args = args,
+            #                         )
+            checkpoint_model(
+                    PATH=args.saved_model_path,
+                    ckpt_id='model_and_optimizer_ckpt_epoch{}_step{}'.format(
+                        index + 1, global_step),
+                    model=model,
+                    epoch=index + 1,
+                    last_global_step=global_step,
+                    last_global_data_samples=global_data_samples
+                )
             break
 
 def main():
@@ -411,8 +498,8 @@ def main():
     args = construct_arguments()
     model, optimizer = prepare_model_optimizer(args)
     start_epoch = 0
-    # if not None in [args.load_training_checkpoint, args.load_checkpoint_id]:
-    #     start_epoch = load_checkpoint(args, model)
+    if not None in [args.load_training_checkpoint, args.load_checkpoint_id]:
+        start_epoch = load_checkpoint(args, model)
     run(args, model, optimizer, start_epoch)
     elapsed = time.time() - start
     logger = args.logger
