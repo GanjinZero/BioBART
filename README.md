@@ -5,6 +5,8 @@ Tsinghua University \& International Digital Economy Academy.
 
 # Model Checkpoints
 
+## BioBART
+
 - Base Version (6 + 6 Layers): **GanjinZero/biobart-base** or **IDEA-CCNL/Yuyuan-Bart-139M** (same model)
 - Large Version (12 + 12 Layers): **GanjinZero/biobart-large** or **IDEA-CCNL/Yuyuan-Bart-400M** (same model)
 
@@ -15,6 +17,23 @@ Two line usages:
 model = AutoModel.from_pretrained('GanjinZero/biobart-base')
 # model = AutoModel.from_pretrained('GanjinZero/biobart-large')
 tok = AutoTokenizer.from_pretrained('GanjinZero/biobart-base')
+```
+
+## BioBART-v2
+
+New generative language model with domain-adaptive pre-training on biomedical corpus BioBART-v2 is released. 
+Compared to BioBART, the main difference of BioBART-v2 is using a cross-domain vocabulary of 85,401 tokens and pre-training for longer steps. 
+
+The detailed implementation introduction and experiment results on bimedical downstream tasks are [here](BioBART-v2.pdf).
+
+- Base Version (6 + 6 Layers): **GanjinZero/biobart-v2-base**
+- Large Version (12 + 12 Layers): **GanjinZero/biobart-v2-large**
+
+Two line usages:
+```python
+model = AutoModel.from_pretrained('GanjinZero/biobart-v2-base')
+# model = AutoModel.from_pretrained('GanjinZero/biobart-v2-large')
+tok = AutoTokenizer.from_pretrained('GanjinZero/biobart-v2-base')
 ```
 
 # Citation
